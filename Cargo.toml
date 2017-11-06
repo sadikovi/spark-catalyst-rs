@@ -1,0 +1,6 @@
+[package]
+name = "spark-catalyst"
+version = "0.1.0"
+authors = ["sadikovi <ivan.sadikov@gmail.com>"]
+
+[dependencies]
