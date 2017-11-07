@@ -28,6 +28,10 @@ pub trait TreeNode<A: TreeNode<A> + Clone + Display + PartialEq> {
     // If index is out of bound, return None, this should be in sync with `num_children()`.
     fn get_child(&self, idx: usize) -> Option<&A>;
 
+    // Set new child at a specified index.
+    // If index is out of bound, this should be no-op.
+    fn set_child(&mut self, idx: usize, child: A);
+
     // Whether or not this node is a leaf node.
     fn is_leaf(&self) -> bool { self.num_children() == 0 }
 
@@ -110,19 +114,36 @@ pub trait TreeNode<A: TreeNode<A> + Clone + Display + PartialEq> {
         self.collect(&mut |node| if node.is_leaf() { Some(node.clone()) } else { None } )
     }
 
+    // Return copy of this node with modified children by applying `func` to all immediate children
+    // of this node.
+    fn map_children<F>(&self, func: &mut F) -> A where F: FnMut(&A) -> A {
+        let mut cloned_node = self.get().clone();
+        let mut idx = 0;
+        while let Some(child) = self.get_child(idx) {
+            cloned_node.set_child(idx, func(child));
+            idx += 1;
+        }
+        cloned_node
+    }
+
     // Returns a copy of this node where `rule` has been recursively applied to it and all of its
     // children (pre-order). When `rule` does not apply to a given node it is left unchanged.
     fn transform_down<F>(&self, rule: &mut F) -> A where F: FnMut(&A) -> Option<A> {
-        // TODO: implement this method
-        self.get().clone()
+        match rule(&self.get()) {
+            Some(after_rule) => after_rule.map_children(&mut |node| node.transform_down(rule)),
+            None => self.map_children(&mut |node| node.transform_down(rule)),
+        }
     }
 
     // Return a copy of this node where `rule` has been recursively applied first to all of its
     // children and then itself (post-order). When `rule` does not apply to a given node, it is left
     // unchanged.
     fn transform_up<F>(&self, rule: &mut F) -> A where F: FnMut(&A) -> Option<A> {
-        // TODO: implement this method
-        self.get().clone()
+        let updated_node = self.map_children(&mut |node| node.transform_up(rule));
+        match rule(&updated_node) {
+            Some(after_rule) => after_rule,
+            None => updated_node,
+        }
     }
 }
 
@@ -164,6 +185,8 @@ mod tests {
         fn num_children(&self) -> usize { self.children.len() }
 
         fn get_child(&self, idx: usize) -> Option<&TestNode> { self.children.get(idx) }
+
+        fn set_child(&mut self, idx: usize, child: TestNode) { self.children[idx] = child; }
     }
 
     // Get small generic tree for testing
@@ -282,5 +305,57 @@ mod tests {
             TestNode::new(String::from("b3"), vec![])
         ];
         assert_eq!(res, expected);
+    }
+
+    #[test]
+    fn test_map_children() {
+        let tree = get_small_test_tree();
+        let res = tree.map_children(&mut |node| {
+            TestNode::new(format!("{}-#", node.label()), node.children.clone())
+        });
+        let mut labels = Vec::new();
+        res.foreach(&mut |node| labels.push(node.label()));
+
+        assert_eq!(labels, ["a1", "b1-#", "c1", "c2", "b2-#", "c3", "b3-#"]);
+    }
+
+    #[test]
+    fn test_transform_down() {
+        let tree = get_small_test_tree();
+        let res = tree.transform_down(&mut |node| {
+            if node.label() == "b1" || node.label() == "b2" {
+                Some(TestNode::new(format!("{}-#", node.label()), vec![]))
+            } else {
+                None
+            }
+        });
+        let expected = TestNode::new(String::from("a1"), vec![
+            TestNode::new(String::from("b1-#"), vec![]),
+            TestNode::new(String::from("b2-#"), vec![]),
+            TestNode::new(String::from("b3"), vec![])
+        ]);
+        assert_eq!(res, expected);
+        // should not modify original tree
+        assert_eq!(tree, get_small_test_tree());
+    }
+
+    #[test]
+    fn test_transform_up() {
+        let tree = get_small_test_tree();
+        let res = tree.transform_up(&mut |node| {
+            let mut cloned = node.clone();
+            while cloned.children.len() > 1 {
+                cloned.children.pop();
+            }
+            Some(cloned)
+        });
+        let expected = TestNode::new(String::from("a1"), vec![
+            TestNode::new(String::from("b1"), vec![
+                TestNode::new(String::from("c1"), vec![])
+            ])
+        ]);
+        assert_eq!(res, expected);
+        // should not modify original tree
+        assert_eq!(tree, get_small_test_tree());
     }
 }
