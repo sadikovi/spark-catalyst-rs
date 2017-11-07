@@ -1,15 +1,38 @@
 pub trait TreeNode<A: TreeNode<A>> {
+    // Get String label for the this node
     fn label(&self) -> String;
 
+    // Return underlying instance A.
     fn get(&self) -> &A;
 
+    // Number of children for this node.
     fn num_children(&self) -> usize;
 
+    // Get child for a specified index.
+    // If index is out of bound, return None, this should be in sync with `num_children()`.
     fn get_child(&self, idx: usize) -> Option<&A>;
 
+    // Whether or not this node is a leaf node.
     fn is_leaf(&self) -> bool { self.num_children() == 0 }
 
-    // Run the given function recursively on this node and then on children
+    // Find first node that matches predicate function.
+    // If no such node is found return None.
+    fn find<F>(&self, func: &mut F) -> Option<&A> where F: FnMut(&A) -> bool {
+        if func(self.get()) {
+            return Some(self.get());
+        }
+        let mut idx = 0;
+        while let Some(child) = self.get_child(idx) {
+            match child.find(func) {
+                res @ Some(_) => return res,
+                None => { }, // no-op, continue searching
+            }
+            idx += 1;
+        }
+        None
+    }
+
+    // Run the given function recursively on this node and then on children.
     fn foreach<F>(&self, func: &mut F) where F: FnMut(&A) {
         func(self.get());
         let mut idx = 0;
@@ -19,7 +42,7 @@ pub trait TreeNode<A: TreeNode<A>> {
         }
     }
 
-    // Run the given function recursively on children and then on this node
+    // Run the given function recursively on children and then on this node.
     fn foreach_up<F>(&self, func: &mut F) where F: FnMut(&A) {
         let mut idx = 0;
         while let Some(child) = self.get_child(idx) {
@@ -71,7 +94,7 @@ mod tests {
     }
 
     #[test]
-    fn test_testnode_properties() {
+    fn test_properties() {
         let tree = get_small_test_tree();
         assert_eq!(tree.label(), "a1");
         assert_eq!(tree.num_children(), 3);
@@ -91,7 +114,7 @@ mod tests {
     }
 
     #[test]
-    fn test_testnode_foreach() {
+    fn test_foreach() {
         let tree = get_small_test_tree();
         let mut labels = Vec::new();
         tree.foreach(&mut |node| {
@@ -101,12 +124,30 @@ mod tests {
     }
 
     #[test]
-    fn test_testnode_foreach_up() {
+    fn test_foreach_up() {
         let tree = get_small_test_tree();
         let mut labels = Vec::new();
         tree.foreach_up(&mut |node| {
             labels.push(node.label())
         });
         assert_eq!(labels, vec!["c1", "c2", "b1", "c3", "b2", "b3", "a1"]);
+    }
+
+    #[test]
+    fn test_find() {
+        let tree = get_small_test_tree();
+        // child node in the tree
+        let res = tree.find(&mut |node| node.label() == "c2");
+        assert!(res.is_some());
+        assert_eq!(res.unwrap().label(), "c2");
+
+        // root of the tree
+        let res = tree.find(&mut |node| node.num_children() == 3);
+        assert!(res.is_some());
+        assert_eq!(res.unwrap().label(), "a1");
+
+        // no result
+        let res = tree.find(&mut |node| node.label() == "<unknown>");
+        assert!(res.is_none());
     }
 }
