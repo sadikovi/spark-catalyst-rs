@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub trait TreeNode<A: TreeNode<A>> {
+use std::fmt::Display;
+
+pub trait TreeNode<A: TreeNode<A> + Clone + Display + PartialEq> {
     // Get String label for the this node
     fn label(&self) -> String;
 
@@ -65,13 +67,72 @@ pub trait TreeNode<A: TreeNode<A>> {
         }
         func(self.get());
     }
+
+    // Internal method to recursively apply map for all nodes.
+    fn internal_map<F, R>(&self, func: &mut F, res: &mut Vec<R>) where F: FnMut(&A) -> R {
+        self.foreach(&mut |node| { res.push(func(node)) });
+    }
+
+    // Return vector of R instances by applying function to all nodes in pre-order traversal.
+    fn map<F, R>(&self, func: &mut F) -> Vec<R> where F: FnMut(&A) -> R {
+        let mut res = Vec::new();
+        self.internal_map(func, &mut res);
+        res
+    }
+
+    // Internal method to recursively apply flat_map for all nodes
+    fn internal_flat_map<F, R>(&self, func: &mut F, res: &mut Vec<R>) where F: FnMut(&A) -> Vec<R> {
+        self.foreach(&mut |node| { res.append(&mut func(node)) });
+    }
+
+    // Return vector of R instances by applying function to all nodes in pre-order traversal and
+    // collect all returned sequences into resulting vector.
+    fn flat_map<F, R>(&self, func: &mut F) -> Vec<R> where F: FnMut(&A) -> Vec<R> {
+        let mut res = Vec::new();
+        self.internal_flat_map(func, &mut res);
+        res
+    }
+
+    // Returns vector containing the result of applying a partial function to all elements in this
+    // tree on which the function is defined (returns Some(R)).
+    fn collect<F, R>(&self, partial_func: &mut F) -> Vec<R> where F: FnMut(&A) -> Option<R> {
+        let mut res = Vec::new();
+        self.foreach(&mut |node| {
+            if let Some(result) = partial_func(node) {
+                res.push(result);
+            }
+        });
+        res
+    }
+
+    // Return vector containing copies of all leaves in this tree.
+    fn collect_leaves(&self) -> Vec<A> {
+        self.collect(&mut |node| if node.is_leaf() { Some(node.clone()) } else { None } )
+    }
+
+    // Returns a copy of this node where `rule` has been recursively applied to it and all of its
+    // children (pre-order). When `rule` does not apply to a given node it is left unchanged.
+    fn transform_down<F>(&self, rule: &mut F) -> A where F: FnMut(&A) -> Option<A> {
+        // TODO: implement this method
+        self.get().clone()
+    }
+
+    // Return a copy of this node where `rule` has been recursively applied first to all of its
+    // children and then itself (post-order). When `rule` does not apply to a given node, it is left
+    // unchanged.
+    fn transform_up<F>(&self, rule: &mut F) -> A where F: FnMut(&A) -> Option<A> {
+        // TODO: implement this method
+        self.get().clone()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fmt::{Error, Formatter};
 
     // == Test node ==
+    #[derive(Clone,Debug)]
     struct TestNode {
         label: String,
         children: Vec<TestNode>
@@ -80,6 +141,18 @@ mod tests {
     impl TestNode {
         fn new(label: String, children: Vec<TestNode>) -> Self {
             Self { label: label, children: children }
+        }
+    }
+
+    impl Display for TestNode {
+        fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+            write!(f, "({})", self.label)
+        }
+    }
+
+    impl PartialEq for TestNode {
+        fn eq(&self, other: &TestNode) -> bool {
+            self.label == other.label && self.children == other.children
         }
     }
 
@@ -163,5 +236,51 @@ mod tests {
         // no result
         let res = tree.find(&mut |node| node.label() == "<unknown>");
         assert!(res.is_none());
+    }
+
+    #[test]
+    fn test_map() {
+        let tree = get_small_test_tree();
+        let res = tree.map(&mut |node| { node.label() });
+        assert_eq!(res, vec!["a1", "b1", "c1", "c2", "b2", "c3", "b3"]);
+
+        // map to a list of boolean leaf/non-leaf
+        let res = tree.map(&mut |node| { node.is_leaf() });
+        assert_eq!(res, vec![false, false, true, true, false, true, true]);
+    }
+
+    #[test]
+    fn test_flat_map() {
+        let tree = get_small_test_tree();
+        let res = tree.flat_map(&mut |node| {
+            let mut vec = Vec::new();
+            for i in 0..node.num_children() {
+                vec.push(node.get_child(i).unwrap().label());
+            }
+            vec
+        });
+        assert_eq!(res, vec!["b1", "b2", "b3", "c1", "c2", "c3"]);
+    }
+
+    #[test]
+    fn test_collect() {
+        let tree = get_small_test_tree();
+        let res = tree.collect(&mut |node| {
+            if !node.is_leaf() { Some (node.label()) } else { None }
+        });
+        assert_eq!(res, vec!["a1", "b1", "b2"]);
+    }
+
+    #[test]
+    fn test_collect_leaves() {
+        let tree = get_small_test_tree();
+        let res = tree.collect_leaves();
+        let expected = vec![
+            TestNode::new(String::from("c1"), vec![]),
+            TestNode::new(String::from("c2"), vec![]),
+            TestNode::new(String::from("c3"), vec![]),
+            TestNode::new(String::from("b3"), vec![])
+        ];
+        assert_eq!(res, expected);
     }
 }
