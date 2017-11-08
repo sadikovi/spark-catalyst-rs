@@ -16,7 +16,10 @@ use std::fmt::Display;
 
 pub trait TreeNode<A: TreeNode<A> + Clone + Display + PartialEq> {
     // Get String label for the this node
-    fn label(&self) -> String;
+    fn node_name(&self) -> String;
+
+    // One-line description of the node
+    fn verbose_string(&self) -> String;
 
     // Return underlying instance A.
     fn get(&self) -> &A;
@@ -167,7 +170,7 @@ mod tests {
 
     impl Display for TestNode {
         fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-            write!(f, "({})", self.label)
+            write!(f, "{}", self.verbose_string())
         }
     }
 
@@ -178,7 +181,9 @@ mod tests {
     }
 
     impl TreeNode<TestNode> for TestNode {
-        fn label(&self) -> String { self.label.clone() }
+        fn node_name(&self) -> String { format!("{}", self.label) }
+
+        fn verbose_string(&self) -> String { format!("({})", self.label) }
 
         fn get(&self) -> &TestNode { &self }
 
@@ -206,19 +211,23 @@ mod tests {
     #[test]
     fn test_properties() {
         let tree = get_small_test_tree();
-        assert_eq!(tree.label(), "a1");
+        assert_eq!(tree.node_name(), "a1");
+        assert_eq!(tree.verbose_string(), "(a1)");
         assert_eq!(tree.num_children(), 3);
         assert_eq!(tree.is_leaf(), false);
 
-        assert_eq!(tree.get_child(0).unwrap().label(), "b1");
+        assert_eq!(tree.get_child(0).unwrap().node_name(), "b1");
+        assert_eq!(tree.get_child(0).unwrap().verbose_string(), "(b1)");
         assert_eq!(tree.get_child(0).unwrap().num_children(), 2);
         assert_eq!(tree.get_child(0).unwrap().is_leaf(), false);
 
-        assert_eq!(tree.get_child(1).unwrap().label(), "b2");
+        assert_eq!(tree.get_child(1).unwrap().node_name(), "b2");
+        assert_eq!(tree.get_child(1).unwrap().verbose_string(), "(b2)");
         assert_eq!(tree.get_child(1).unwrap().num_children(), 1);
         assert_eq!(tree.get_child(1).unwrap().is_leaf(), false);
 
-        assert_eq!(tree.get_child(2).unwrap().label(), "b3");
+        assert_eq!(tree.get_child(2).unwrap().node_name(), "b3");
+        assert_eq!(tree.get_child(2).unwrap().verbose_string(), "(b3)");
         assert_eq!(tree.get_child(2).unwrap().num_children(), 0);
         assert_eq!(tree.get_child(2).unwrap().is_leaf(), true);
     }
@@ -228,7 +237,7 @@ mod tests {
         let tree = get_small_test_tree();
         let mut labels = Vec::new();
         tree.foreach(&mut |node| {
-            labels.push(node.label())
+            labels.push(node.node_name())
         });
         assert_eq!(labels, vec!["a1", "b1", "c1", "c2", "b2", "c3", "b3"]);
     }
@@ -238,7 +247,7 @@ mod tests {
         let tree = get_small_test_tree();
         let mut labels = Vec::new();
         tree.foreach_up(&mut |node| {
-            labels.push(node.label())
+            labels.push(node.node_name())
         });
         assert_eq!(labels, vec!["c1", "c2", "b1", "c3", "b2", "b3", "a1"]);
     }
@@ -247,24 +256,24 @@ mod tests {
     fn test_find() {
         let tree = get_small_test_tree();
         // child node in the tree
-        let res = tree.find(&mut |node| node.label() == "c2");
+        let res = tree.find(&mut |node| node.node_name() == "c2");
         assert!(res.is_some());
-        assert_eq!(res.unwrap().label(), "c2");
+        assert_eq!(res.unwrap().node_name(), "c2");
 
         // root of the tree
         let res = tree.find(&mut |node| node.num_children() == 3);
         assert!(res.is_some());
-        assert_eq!(res.unwrap().label(), "a1");
+        assert_eq!(res.unwrap().node_name(), "a1");
 
         // no result
-        let res = tree.find(&mut |node| node.label() == "<unknown>");
+        let res = tree.find(&mut |node| node.node_name() == "<unknown>");
         assert!(res.is_none());
     }
 
     #[test]
     fn test_map() {
         let tree = get_small_test_tree();
-        let res = tree.map(&mut |node| { node.label() });
+        let res = tree.map(&mut |node| { node.node_name() });
         assert_eq!(res, vec!["a1", "b1", "c1", "c2", "b2", "c3", "b3"]);
 
         // map to a list of boolean leaf/non-leaf
@@ -278,7 +287,7 @@ mod tests {
         let res = tree.flat_map(&mut |node| {
             let mut vec = Vec::new();
             for i in 0..node.num_children() {
-                vec.push(node.get_child(i).unwrap().label());
+                vec.push(node.get_child(i).unwrap().node_name());
             }
             vec
         });
@@ -289,7 +298,7 @@ mod tests {
     fn test_collect() {
         let tree = get_small_test_tree();
         let res = tree.collect(&mut |node| {
-            if !node.is_leaf() { Some (node.label()) } else { None }
+            if !node.is_leaf() { Some (node.node_name()) } else { None }
         });
         assert_eq!(res, vec!["a1", "b1", "b2"]);
     }
@@ -311,10 +320,10 @@ mod tests {
     fn test_map_children() {
         let tree = get_small_test_tree();
         let res = tree.map_children(&mut |node| {
-            TestNode::new(format!("{}-#", node.label()), node.children.clone())
+            TestNode::new(format!("{}-#", node.node_name()), node.children.clone())
         });
         let mut labels = Vec::new();
-        res.foreach(&mut |node| labels.push(node.label()));
+        res.foreach(&mut |node| labels.push(node.node_name()));
 
         assert_eq!(labels, ["a1", "b1-#", "c1", "c2", "b2-#", "c3", "b3-#"]);
     }
@@ -323,8 +332,8 @@ mod tests {
     fn test_transform_down() {
         let tree = get_small_test_tree();
         let res = tree.transform_down(&mut |node| {
-            if node.label() == "b1" || node.label() == "b2" {
-                Some(TestNode::new(format!("{}-#", node.label()), vec![]))
+            if node.node_name() == "b1" || node.node_name() == "b2" {
+                Some(TestNode::new(format!("{}-#", node.node_name()), vec![]))
             } else {
                 None
             }
