@@ -13,6 +13,16 @@
 // limitations under the License.
 
 //! Collection of generic methods and traits for working with trees.
+//! A library for easily manipulating trees of operators. Operators that extend TreeNode are
+//! granted the following interface/methods:
+//!
+//! - Scala collection like methods: `foreach`, `map`, `flat_map`, `collect`, etc
+//! - `transform_up`/`transform_down` - accepts a partial function (one that returns option) that
+//! is used to generate a new tree. When the partial function can be applied to a given tree
+//! segment, that segment is replaced with the result, otherwise old segment is retained. Depending
+//! on "up" or "down" order, partial function is recursively applied to current node and all
+//! children of current node, or vice versa.
+//! - debugging support - pretty printing, tree structure display, etc.
 
 use std::fmt::Display;
 
