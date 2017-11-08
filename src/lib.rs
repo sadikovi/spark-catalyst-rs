@@ -148,6 +148,49 @@ pub trait TreeNode<A: TreeNode<A> + Clone + Display + PartialEq> {
             None => updated_node,
         }
     }
+
+    // Internal method to generate tree string
+    fn gen_tree(&self, depth: usize, prefix: &str, is_last_child: bool, buffer: &mut Vec<String>) {
+        let parent_prefix = if depth == 0 { "" } else if is_last_child { "+- " } else { "- " };
+        // generate prefix for current node
+        let curr = format!("{}{}{}", prefix, parent_prefix, self.node_name());
+        buffer.push(curr);
+        // add child levels
+        let depth = depth + 1; // update to child depth
+        let mut idx = 0;
+        while let Some(child) = self.get_child(idx) {
+            let is_last_child = idx == self.num_children() - 1;
+            // when node is last child, we separately attach '+' when constructing prefix
+            let node_sym = if is_last_child { "" } else { ":" };
+            let prefix = format!("{}{}{}", prefix, " ".repeat(parent_prefix.len()), node_sym);
+            child.gen_tree(depth, &prefix, is_last_child, buffer);
+            idx += 1;
+        }
+    }
+
+    // Internal method that returns generated lines of tree string
+    fn internal_tree_lines(&self) -> Vec<String> {
+        let mut buffer = Vec::new();
+        self.gen_tree(0, "", false, &mut buffer);
+        buffer
+    }
+
+    // Return a string representation of the nodes in this tree.
+    // Tree is traversed in depth-first order, with appropriate offsets for each child level.
+    fn tree_string(&self) -> String {
+        self.internal_tree_lines().join("\n")
+    }
+
+    // Return a string representation of the nodes in this tree, where each operator is numbered.
+    // The numbers are based on depth-first traversal of the tree with inner children traversed
+    // first before children.
+    fn numbered_tree_string(&self) -> String {
+        let mut buffer = Vec::new();
+        for (i, line) in self.internal_tree_lines().iter().enumerate() {
+            buffer.push(format!("{:0width$} {}", i + 1, line, width=2));
+        }
+        buffer.join("\n")
+    }
 }
 
 #[cfg(test)]
@@ -195,7 +238,7 @@ mod tests {
     }
 
     // Get small generic tree for testing
-    fn get_small_test_tree() -> TestNode {
+    fn get_small_test_tree_1() -> TestNode {
         TestNode::new(String::from("a1"), vec![
             TestNode::new(String::from("b1"), vec![
                 TestNode::new(String::from("c1"), vec![]),
@@ -208,9 +251,20 @@ mod tests {
         ])
     }
 
+    // Get small generic tree with each node having only one child
+    fn get_small_test_tree_2() -> TestNode {
+        TestNode::new(String::from("a"), vec![
+            TestNode::new(String::from("b"), vec![
+                TestNode::new(String::from("c"), vec![
+                    TestNode::new(String::from("d"), vec![])
+                ])
+            ])
+        ])
+    }
+
     #[test]
     fn test_properties() {
-        let tree = get_small_test_tree();
+        let tree = get_small_test_tree_1();
         assert_eq!(tree.node_name(), "a1");
         assert_eq!(tree.verbose_string(), "(a1)");
         assert_eq!(tree.num_children(), 3);
@@ -234,7 +288,7 @@ mod tests {
 
     #[test]
     fn test_foreach() {
-        let tree = get_small_test_tree();
+        let tree = get_small_test_tree_1();
         let mut labels = Vec::new();
         tree.foreach(&mut |node| {
             labels.push(node.node_name())
@@ -244,7 +298,7 @@ mod tests {
 
     #[test]
     fn test_foreach_up() {
-        let tree = get_small_test_tree();
+        let tree = get_small_test_tree_1();
         let mut labels = Vec::new();
         tree.foreach_up(&mut |node| {
             labels.push(node.node_name())
@@ -254,7 +308,7 @@ mod tests {
 
     #[test]
     fn test_find() {
-        let tree = get_small_test_tree();
+        let tree = get_small_test_tree_1();
         // child node in the tree
         let res = tree.find(&mut |node| node.node_name() == "c2");
         assert!(res.is_some());
@@ -272,7 +326,7 @@ mod tests {
 
     #[test]
     fn test_map() {
-        let tree = get_small_test_tree();
+        let tree = get_small_test_tree_1();
         let res = tree.map(&mut |node| { node.node_name() });
         assert_eq!(res, vec!["a1", "b1", "c1", "c2", "b2", "c3", "b3"]);
 
@@ -283,7 +337,7 @@ mod tests {
 
     #[test]
     fn test_flat_map() {
-        let tree = get_small_test_tree();
+        let tree = get_small_test_tree_1();
         let res = tree.flat_map(&mut |node| {
             let mut vec = Vec::new();
             for i in 0..node.num_children() {
@@ -296,7 +350,7 @@ mod tests {
 
     #[test]
     fn test_collect() {
-        let tree = get_small_test_tree();
+        let tree = get_small_test_tree_1();
         let res = tree.collect(&mut |node| {
             if !node.is_leaf() { Some (node.node_name()) } else { None }
         });
@@ -305,7 +359,7 @@ mod tests {
 
     #[test]
     fn test_collect_leaves() {
-        let tree = get_small_test_tree();
+        let tree = get_small_test_tree_1();
         let res = tree.collect_leaves();
         let expected = vec![
             TestNode::new(String::from("c1"), vec![]),
@@ -318,7 +372,7 @@ mod tests {
 
     #[test]
     fn test_map_children() {
-        let tree = get_small_test_tree();
+        let tree = get_small_test_tree_1();
         let res = tree.map_children(&mut |node| {
             TestNode::new(format!("{}-#", node.node_name()), node.children.clone())
         });
@@ -330,7 +384,7 @@ mod tests {
 
     #[test]
     fn test_transform_down() {
-        let tree = get_small_test_tree();
+        let tree = get_small_test_tree_1();
         let res = tree.transform_down(&mut |node| {
             if node.node_name() == "b1" || node.node_name() == "b2" {
                 Some(TestNode::new(format!("{}-#", node.node_name()), vec![]))
@@ -345,12 +399,12 @@ mod tests {
         ]);
         assert_eq!(res, expected);
         // should not modify original tree
-        assert_eq!(tree, get_small_test_tree());
+        assert_eq!(tree, get_small_test_tree_1());
     }
 
     #[test]
     fn test_transform_up() {
-        let tree = get_small_test_tree();
+        let tree = get_small_test_tree_1();
         let res = tree.transform_up(&mut |node| {
             let mut cloned = node.clone();
             while cloned.children.len() > 1 {
@@ -365,6 +419,54 @@ mod tests {
         ]);
         assert_eq!(res, expected);
         // should not modify original tree
-        assert_eq!(tree, get_small_test_tree());
+        assert_eq!(tree, get_small_test_tree_1());
+    }
+
+    #[test]
+    fn test_tree_string() {
+        let tree = get_small_test_tree_1();
+        let res = tree.tree_string();
+        assert_eq!(res, vec![
+            "a1",
+            ":- b1",
+            ":  :- c1",
+            ":  +- c2",
+            ":- b2",
+            ":  +- c3",
+            "+- b3"
+        ].join("\n"));
+
+        let tree = get_small_test_tree_2();
+        let res = tree.tree_string();
+        assert_eq!(res, vec![
+            "a",
+            "+- b",
+            "   +- c",
+            "      +- d"
+        ].join("\n"));
+    }
+
+    #[test]
+    fn test_numbered_tree_string() {
+        let tree = get_small_test_tree_1();
+        let res = tree.numbered_tree_string();
+        assert_eq!(res, vec![
+            "01 a1",
+            "02 :- b1",
+            "03 :  :- c1",
+            "04 :  +- c2",
+            "05 :- b2",
+            "06 :  +- c3",
+            "07 +- b3"
+        ].join("\n"));
+
+        let tree = get_small_test_tree_2();
+        let res = tree.numbered_tree_string();
+        assert_eq!(res, vec![
+            "01 a",
+            "02 +- b",
+            "03    +- c",
+            "04       +- d"
+        ].join("\n"));
     }
 }
