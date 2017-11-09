@@ -5,4 +5,3 @@ authors = ["sadikovi <ivan.sadikov@gmail.com>"]
 
 [dependencies]
 log = "0.3"
-
