@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[macro_use]
-extern crate log;
+//! List of various catalyst errors used in library.
+//! - `TreeNode` is used for tree checking and in rule executor.
 
-/// Catalyst errors
-#[macro_use]
-mod errors;
-/// Generic tree manipulation traits and methods
-pub mod trees;
-/// Rule execution and strategy
-pub mod rules;
+#[derive(Debug)]
+pub enum CatalystError {
+    TreeNode(String)
+}
+
+macro_rules! tree_err {
+    ($fmt:expr) => (Err(CatalystError::TreeNode($fmt.to_owned())));
+    ($fmt:expr, $($args:expr), *) => (Err(CatalystError::TreeNode(format!($fmt, $($args), *))));
+}
