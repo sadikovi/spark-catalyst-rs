@@ -13,14 +13,16 @@
 // limitations under the License.
 
 //! List of various catalyst errors used in library.
-//! - `TreeNode` is used for tree checking and in rule executor.
 
+
+/// Enum lists all errors used in rule execution and analysis.
 #[derive(Debug)]
 pub enum CatalystError {
-    TreeNode(String)
+    /// `Tree` error is raised when plan is not integral/tree is invalid.
+    Tree(String)
 }
 
 macro_rules! tree_err {
-    ($fmt:expr) => (Err(CatalystError::TreeNode($fmt.to_owned())));
-    ($fmt:expr, $($args:expr), *) => (Err(CatalystError::TreeNode(format!($fmt, $($args), *))));
+    ($fmt:expr) => (Err(CatalystError::Tree($fmt.to_owned())));
+    ($fmt:expr, $($args:expr), *) => (Err(CatalystError::Tree(format!($fmt, $($args), *))));
 }
