@@ -24,10 +24,8 @@
 //! children of current node, or vice versa.
 //! - debugging support - pretty printing, tree structure display, etc.
 
-use std::fmt::Display;
-
 /// Generic TreeNode to provide traversal and transform.
-pub trait TreeNode<A: TreeNode<A> + Clone + Display + PartialEq> {
+pub trait TreeNode<A: TreeNode<A>> {
     /// Get String label for the this node.
     fn node_name(&self) -> String;
 
@@ -47,6 +45,15 @@ pub trait TreeNode<A: TreeNode<A> + Clone + Display + PartialEq> {
     /// Set new child at a specified index.
     /// If index is out of bound, this should be no-op.
     fn set_child(&mut self, idx: usize, child: A);
+
+    /// Clone current tree node recursively.
+    /// Use `Clone` trait to implement this functionality.
+    fn clone_tree(&self) -> A;
+
+    /// Equality of two trees, compares recursively.
+    /// Returns `true` if both full trees are equal, otherwise `false`.
+    /// Use `PartialEq` trait to implement this functionality.
+    fn equals(&self, other: &A) -> bool;
 
     /// Whether or not this node is a leaf node.
     fn is_leaf(&self) -> bool { self.num_children() == 0 }
@@ -127,13 +134,13 @@ pub trait TreeNode<A: TreeNode<A> + Clone + Display + PartialEq> {
 
     /// Return vector containing copies of all leaves in this tree.
     fn collect_leaves(&self) -> Vec<A> {
-        self.collect(&mut |node| if node.is_leaf() { Some(node.clone()) } else { None } )
+        self.collect(&mut |node| if node.is_leaf() { Some(node.clone_tree()) } else { None } )
     }
 
     /// Return copy of this node with modified children by applying `func` to all immediate children
     /// of this node.
     fn map_children<F>(&self, func: &mut F) -> A where F: FnMut(&A) -> A {
-        let mut cloned_node = self.get().clone();
+        let mut cloned_node = self.get().clone_tree();
         let mut idx = 0;
         while let Some(child) = self.get_child(idx) {
             cloned_node.set_child(idx, func(child));
@@ -209,10 +216,9 @@ pub trait TreeNode<A: TreeNode<A> + Clone + Display + PartialEq> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fmt::{Error, Formatter};
 
     // == Test node ==
-    #[derive(Clone,Debug)]
+    #[derive(Clone,Debug,PartialEq)]
     struct TestNode {
         label: String,
         children: Vec<TestNode>
@@ -221,18 +227,6 @@ mod tests {
     impl TestNode {
         fn new(label: String, children: Vec<TestNode>) -> Self {
             Self { label: label, children: children }
-        }
-    }
-
-    impl Display for TestNode {
-        fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-            write!(f, "{}", self.verbose_string())
-        }
-    }
-
-    impl PartialEq for TestNode {
-        fn eq(&self, other: &TestNode) -> bool {
-            self.label == other.label && self.children == other.children
         }
     }
 
@@ -248,6 +242,10 @@ mod tests {
         fn get_child(&self, idx: usize) -> Option<&TestNode> { self.children.get(idx) }
 
         fn set_child(&mut self, idx: usize, child: TestNode) { self.children[idx] = child; }
+
+        fn clone_tree(&self) -> TestNode { self.clone() }
+
+        fn equals(&self, other: &TestNode) -> bool { self.eq(other) }
     }
 
     // Get small generic tree for testing
@@ -297,6 +295,19 @@ mod tests {
         assert_eq!(tree.get_child(2).unwrap().verbose_string(), "(b3)");
         assert_eq!(tree.get_child(2).unwrap().num_children(), 0);
         assert_eq!(tree.get_child(2).unwrap().is_leaf(), true);
+    }
+
+    #[test]
+    fn test_clone_equals() {
+        let tree = get_small_test_tree_1();
+        assert_eq!(tree.clone_tree(), tree);
+        assert!(tree.equals(&tree.clone()));
+
+        // should not match
+        let tree1 = get_small_test_tree_1();
+        let tree2 = get_small_test_tree_2();
+        assert!(!tree1.equals(&tree2));
+        assert!(!tree1.clone_tree().equals(&tree2.clone_tree()));
     }
 
     #[test]
