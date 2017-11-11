@@ -36,63 +36,42 @@ impl Strategy {
 
 /// Execution rule.
 pub trait Rule {
+    type Plan;
+
     /// Rule name.
     fn name(&self) -> String;
 
     /// Transform plan A into a new plan according to the rule.
-    fn apply<A>(&self, plan: &A) -> A;
+    /// If plan cannot be transformed, return None.
+    fn apply(&self, plan: &Self::Plan) -> Option<Self::Plan>;
 }
 
-/// Batch of rules.
-/// Contains name, associated strategy and list of rules to run.
-pub struct Batch<R: Rule> {
-    name: String,
-    strategy: Strategy,
-    rules: Vec<R>
-}
+pub trait Batch {
+    type Plan;
 
-impl<R: Rule> Batch<R> {
-    /// Return new batch of rules.
-    pub fn new(name: String, strategy: Strategy, rules: Vec<R>) -> Self {
-        Self { name: name, strategy: strategy, rules: rules }
-    }
+    fn name(&self) -> String;
 
-    /// Name of this batch.
-    pub fn name(&self) -> &str {
-        &self.name
-    }
+    fn strategy(&self) -> &Strategy;
 
-    /// Strategy for this batch.
-    pub fn strategy(&self) -> &Strategy {
-        &self.strategy
-    }
-
-    /// Number of rules in this batch.
-    pub fn num_rules(&self) -> usize {
-        self.rules.len()
-    }
-
-    /// Get rule reference for the index.
-    /// None is returned if index is out of bound.
-    pub fn get_rule(&self, idx: usize) -> Option<&R> {
-        self.rules.get(idx)
-    }
+    fn rules(&self) -> &Vec<Box<Rule<Plan=Self::Plan>>>;
 }
 
 /// Abstract rule executor for batches of rules.
-pub trait RuleExecutor<A: Clone + PartialEq, R: Rule> {
+pub trait RuleExecutor {
+    type Plan: Clone + PartialEq;
+
     /// Sequence of rule batches.
-    fn batches() -> Vec<Batch<R>>;
+    fn batches() -> Vec<Box<Batch<Plan=Self::Plan>>>;
 
     /// Defines a check function that checks for structural integrity of the plan after the
     /// execution of each rule. For example, we can check whether a plan is still resolved after
     /// each rule in optimizer, so we can catch rules that return invalid plans. The check function
     /// returns `false` if the given plan doesn't pass the structural integrity check.
-    fn is_plan_integral(plan: &A) -> bool;
+    fn is_plan_integral(plan: &Self::Plan) -> bool;
 
     /// Executes the batches of rules defined by the subclass. The batches are executed serially
     /// using the defined execution strategy. Within each batch, rules are also executed serially.
-    fn execute(plan: &A) -> Result<A, CatalystError> {
+    fn execute(plan: &Self::Plan) -> Result<Self::Plan, CatalystError> {
         // current plan for update
         let mut current_plan = plan.clone();
 
@@ -105,18 +84,19 @@ pub trait RuleExecutor<A: Clone + PartialEq, R: Rule> {
             let mut last_plan = current_plan.clone();
 
             while do_continue {
-                for i in 0..batch.num_rules() {
-                    let rule = batch.get_rule(i).unwrap();
-                    current_plan = rule.apply(&current_plan);
+                for rule in batch.rules() {
+                    if let Some(updated_plan) = rule.apply(&current_plan) {
+                        current_plan = updated_plan;
+                    }
 
                     if !Self::is_plan_integral(&current_plan) {
-                        return tree_err!("After applying rule {} in batch {}, the structural integrity of
-                            the plan is broken", rule.name(), batch.name());
+                        return tree_err!("After applying rule {} in batch {}, the structural
+                            integrity of the plan is broken", rule.name(), batch.name());
                     }
                 }
                 iteration += 1;
-                if iteration > batch.strategy.num_iterations() {
-                    if batch.strategy.num_iterations() > 1 {
+                if iteration > batch.strategy().num_iterations() {
+                    if batch.strategy().num_iterations() > 1 {
                         debug!("Max iterations {} reached for batch {}",
                             iteration - 1, batch.name());
                     }
