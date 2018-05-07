@@ -1,7 +1,13 @@
 [package]
 name = "spark-catalyst"
 version = "0.1.0"
-authors = ["sadikovi <ivan.sadikov@gmail.com>"]
+authors = ["Ivan Sadikov <ivan.sadikov@gmail.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+description = "Query optimizer inspired by Apache Spark SQL Catalyst"
+homepage = "https://github.com/sadikovi/spark-catalyst-rs"
+repository = "https://github.com/sadikovi/spark-catalyst-rs"
+keywords = ["spark", "catalyst"]
 
 [dependencies]
 log = "0.3"
