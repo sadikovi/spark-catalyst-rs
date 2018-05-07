@@ -15,10 +15,7 @@
 #[macro_use]
 extern crate log;
 
-/// Catalyst errors
 #[macro_use]
 pub mod errors;
-/// Generic tree manipulation traits and methods
 pub mod trees;
-/// Rule execution and strategy
 pub mod rules;

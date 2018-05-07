@@ -14,15 +14,14 @@
 
 //! List of various catalyst errors used in library.
 
-
 /// Enum lists all errors used in rule execution and analysis.
 #[derive(Debug)]
 pub enum CatalystError {
-    /// `Tree` error is raised when plan is not integral/tree is invalid.
-    Tree(String)
+  /// `Tree` error is raised when plan is not integral/tree is invalid.
+  Tree(String)
 }
 
 macro_rules! tree_err {
-    ($fmt:expr) => (Err(CatalystError::Tree($fmt.to_owned())));
-    ($fmt:expr, $($args:expr), *) => (Err(CatalystError::Tree(format!($fmt, $($args), *))));
+  ($fmt:expr) => (Err(CatalystError::Tree($fmt.to_owned())));
+  ($fmt:expr, $($args:expr), *) => (Err(CatalystError::Tree(format!($fmt, $($args), *))));
 }
