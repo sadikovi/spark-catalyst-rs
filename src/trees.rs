@@ -52,13 +52,13 @@ pub trait TreeNode<A: TreeNode<A>> {
 
   /// Clones current tree node recursively.
   ///
-  /// TODO: Use `Clone` trait to implement this functionality.
+  /// Should be similar to `Clone` trait functionality.
   fn clone_tree(&self) -> A;
 
   /// Equality of two trees, compares recursively.
   ///
   /// Returns `true` if both full trees are equal, otherwise `false`.
-  /// TODO: Use `PartialEq` trait to implement this functionality.
+  /// Should be similar to `PartialEq` trait functionality.
   fn equals(&self, other: &A) -> bool;
 
   /// Returns `true` if this node is a leaf node, `false` otherwise.
