@@ -145,3 +145,69 @@ impl Expression for Literal {
     self
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_literal_is_null() {
+    assert_eq!(Literal::lit(1i8).is_null(), false);
+    assert_eq!(Literal::lit(1i16).is_null(), false);
+    assert_eq!(Literal::lit(1i32).is_null(), false);
+    assert_eq!(Literal::lit(1i64).is_null(), false);
+    assert_eq!(Literal::lit(1f32).is_null(), false);
+    assert_eq!(Literal::lit(1f64).is_null(), false);
+    assert_eq!(Literal::lit(String::from("abc")).is_null(), false);
+    assert_eq!(Literal::lit("abc").is_null(), false);
+
+    assert_eq!(Literal::Byte(None).is_null(), true);
+    assert_eq!(Literal::Short(None).is_null(), true);
+    assert_eq!(Literal::Integer(None).is_null(), true);
+    assert_eq!(Literal::Long(None).is_null(), true);
+    assert_eq!(Literal::Float(None).is_null(), true);
+    assert_eq!(Literal::Double(None).is_null(), true);
+    assert_eq!(Literal::String(None).is_null(), true);
+  }
+
+  #[test]
+  fn test_literal_display() {
+    assert_eq!(Literal::lit(1i8).to_string(), "1");
+    assert_eq!(Literal::lit(1i16).to_string(), "1");
+    assert_eq!(Literal::lit(1i32).to_string(), "1");
+    assert_eq!(Literal::lit(1i64).to_string(), "1");
+    assert_eq!(Literal::lit(1f32).to_string(), "1.0");
+    assert_eq!(Literal::lit(1f64).to_string(), "1.0");
+    assert_eq!(Literal::lit(String::from("abc")).to_string(), "\"abc\"");
+    assert_eq!(Literal::lit("abc").to_string(), "\"abc\"");
+
+    assert_eq!(Literal::Byte(None).to_string(), "null");
+    assert_eq!(Literal::Short(None).to_string(), "null");
+    assert_eq!(Literal::Integer(None).to_string(), "null");
+    assert_eq!(Literal::Long(None).to_string(), "null");
+    assert_eq!(Literal::Float(None).to_string(), "null");
+    assert_eq!(Literal::Double(None).to_string(), "null");
+    assert_eq!(Literal::String(None).to_string(), "null");
+  }
+
+  #[test]
+  fn test_literal_datatype() {
+    assert_eq!(Literal::Byte(None).data_type(), &DataType::ByteType);
+    assert_eq!(Literal::Short(None).data_type(), &DataType::ShortType);
+    assert_eq!(Literal::Integer(None).data_type(), &DataType::IntegerType);
+    assert_eq!(Literal::Long(None).data_type(), &DataType::LongType);
+    assert_eq!(Literal::Float(None).data_type(), &DataType::FloatType);
+    assert_eq!(Literal::Double(None).data_type(), &DataType::DoubleType);
+    assert_eq!(Literal::String(None).data_type(), &DataType::StringType);
+  }
+
+  #[test]
+  fn test_literal_eq_as_expr() {
+    let a = Literal::lit(1i32);
+    assert_eq!(a.eq_as_expr(&Literal::lit(1i32).clone_as_expr()), true);
+    assert_eq!(a.eq_as_expr(&Literal::lit(2i32).clone_as_expr()), false);
+    assert_eq!(a.eq_as_expr(&Literal::lit("abc").clone_as_expr()), false);
+    assert_eq!(a.eq_as_expr(&Literal::Integer(None).clone_as_expr()), false);
+    assert_eq!(a.eq_as_expr(&Literal::lit(1i8).clone_as_expr()), false);
+  }
+}
