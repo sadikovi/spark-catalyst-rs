@@ -130,15 +130,15 @@ impl Expression for Literal {
   }
 
   fn eq_as_expr(&self, other: &Box<Expression>) -> bool {
-    match Box::new(other.as_any_ref()).downcast_ref::<Literal>() {
+    match Box::new(other.as_any_ref()).downcast_ref::<Self>() {
       Some(literal) => self.eq(literal),
       None => false
     }
   }
 
   /// Converts current expression into an expression tree.
-  fn as_tree(self) -> ExpressionTreeNode {
-    ExpressionTreeNode::new(Box::new(self), vec![])
+  fn as_tree(&self) -> ExpressionTreeNode {
+    ExpressionTreeNode::new(self.clone_as_expr(), vec![])
   }
 
   fn as_any_ref(&self) -> &any::Any {

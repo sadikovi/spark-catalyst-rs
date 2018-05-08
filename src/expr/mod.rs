@@ -16,3 +16,4 @@
 
 pub mod api;
 pub mod literal;
+pub mod arithmetic;

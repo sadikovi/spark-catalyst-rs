@@ -72,7 +72,7 @@ pub trait Expression: fmt::Display {
   fn eq_as_expr(&self, other: &Box<Expression>) -> bool;
 
   /// Converts current expression into an expression tree.
-  fn as_tree(self) -> ExpressionTreeNode;
+  fn as_tree(&self) -> ExpressionTreeNode;
 
   /// Converts current expression into `Any` for downcast in equality.
   /// Normally should return `self` for concrete types.
