@@ -248,7 +248,7 @@ mod tests {
   use super::*;
 
   // == Test node ==
-  #[derive(Clone,Debug,PartialEq)]
+  #[derive(Clone, Debug, PartialEq)]
   struct TestNode {
     label: String,
     children: Vec<TestNode>

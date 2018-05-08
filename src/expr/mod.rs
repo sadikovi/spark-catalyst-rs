@@ -12,12 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[macro_use]
-extern crate log;
+//! Module defines base expression trait and implementations.
 
-#[macro_use]
-pub mod errors;
-pub mod trees;
-pub mod rules;
-pub mod types;
-pub mod expr;
+pub mod api;
+pub mod literal;
