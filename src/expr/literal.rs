@@ -17,7 +17,7 @@
 use std::any;
 use std::fmt;
 
-use expr::api::{Expression, ExpressionTreeNode};
+use expr::api::{Expression, ExpressionTreeNode, OutputDataType};
 use types::DataType;
 
 #[derive(Clone, PartialEq)]
@@ -66,6 +66,21 @@ impl fmt::Display for Literal {
   }
 }
 
+impl OutputDataType for Literal {
+  fn output_datatype(&self) -> &DataType {
+    match self {
+      Literal::Boolean(_) => &DataType::BooleanType,
+      Literal::Byte(_) => &DataType::ByteType,
+      Literal::Short(_) => &DataType::ShortType,
+      Literal::Integer(_) => &DataType::IntegerType,
+      Literal::Long(_) => &DataType::LongType,
+      Literal::Float(_) => &DataType::FloatType,
+      Literal::Double(_) => &DataType::DoubleType,
+      Literal::String(_) => &DataType::StringType
+    }
+  }
+}
+
 impl Expression for Literal {
   fn foldable(&self) -> bool {
     true
@@ -81,19 +96,6 @@ impl Expression for Literal {
 
   fn resolved(&self) -> bool {
     true
-  }
-
-  fn data_type(&self) -> &DataType {
-    match self {
-      Literal::Boolean(_) => &DataType::BooleanType,
-      Literal::Byte(_) => &DataType::ByteType,
-      Literal::Short(_) => &DataType::ShortType,
-      Literal::Integer(_) => &DataType::IntegerType,
-      Literal::Long(_) => &DataType::LongType,
-      Literal::Float(_) => &DataType::FloatType,
-      Literal::Double(_) => &DataType::DoubleType,
-      Literal::String(_) => &DataType::StringType
-    }
   }
 
   fn pretty_name(&self) -> &str {

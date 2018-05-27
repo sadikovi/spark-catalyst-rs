@@ -21,7 +21,10 @@ use trees::TreeNode;
 use types::DataType;
 
 /// A base expression trait.
-pub trait Expression: fmt::Display {
+///
+/// Do not provide specific implementations on `Expression` trait, use specialised traits
+/// instead.
+pub trait Expression: fmt::Display + OutputDataType {
   /// Returns `true` when an expression is a candidate for static evaluation before the
   /// query is executed.
   ///
@@ -58,7 +61,9 @@ pub trait Expression: fmt::Display {
   ///
   /// It is invalid to query the dataType of an unresolved expression
   /// (i.e., when `resolved` == `false`).
-  fn data_type(&self) -> &DataType;
+  fn data_type(&self) -> &DataType {
+    self.output_datatype()
+  }
 
   /// Returns a user-facing string representation of this expression's name.
   fn pretty_name(&self) -> &str;
@@ -77,6 +82,11 @@ pub trait Expression: fmt::Display {
   /// Converts current expression into `Any` for downcast in equality.
   /// Normally should return `self` for concrete types.
   fn as_any_ref(&self) -> &any::Any;
+}
+
+/// Trait for providing the data type of the result of evaluating this expression.
+pub trait OutputDataType {
+  fn output_datatype(&self) -> &DataType;
 }
 
 /// Tree node for expression.

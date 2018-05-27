@@ -20,4 +20,5 @@ pub mod errors;
 pub mod trees;
 pub mod rules;
 pub mod types;
+#[macro_use]
 pub mod expr;

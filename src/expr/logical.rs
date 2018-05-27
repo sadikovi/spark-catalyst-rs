@@ -14,13 +14,69 @@
 
 //! Logical expressions.
 
-binary_expression![GreaterThan, ">", "greater than"];
-binary_expression![LessThan, "<", "less than"];
-binary_expression![GreaterThanOrEqual, ">=", "greater than or equal"];
-binary_expression![LessThanOrEqual, "<=", "less than or equal"];
-binary_expression![Equals, "==", "equals"];
+use expr::api::OutputDataType;
+use types::DataType;
 
-binary_expression![And, "&&", "and"];
-binary_expression![Or, "||", "or"];
+binary_expression![GreaterThan, ">", "greater than",
+  impl OutputDataType for GreaterThan {
+    fn output_datatype(&self) -> &DataType {
+      &DataType::BooleanType
+    }
+  }
+];
 
-unary_expression![Not, "!", "not"];
+binary_expression![LessThan, "<", "less than",
+  impl OutputDataType for LessThan {
+    fn output_datatype(&self) -> &DataType {
+      &DataType::BooleanType
+    }
+  }
+];
+
+binary_expression![GreaterThanOrEqual, ">=", "greater than or equal",
+  impl OutputDataType for GreaterThanOrEqual {
+    fn output_datatype(&self) -> &DataType {
+      &DataType::BooleanType
+    }
+  }
+];
+
+binary_expression![LessThanOrEqual, "<=", "less than or equal",
+  impl OutputDataType for LessThanOrEqual {
+    fn output_datatype(&self) -> &DataType {
+      &DataType::BooleanType
+    }
+  }
+];
+
+binary_expression![Equals, "==", "equals",
+  impl OutputDataType for Equals {
+    fn output_datatype(&self) -> &DataType {
+      &DataType::BooleanType
+    }
+  }
+];
+
+binary_expression![And, "&&", "and",
+  impl OutputDataType for And {
+    fn output_datatype(&self) -> &DataType {
+      &DataType::BooleanType
+    }
+  }
+];
+
+binary_expression![Or, "||", "or",
+  impl OutputDataType for Or {
+    fn output_datatype(&self) -> &DataType {
+      &DataType::BooleanType
+    }
+  }
+];
+
+unary_expression![Not, "!", "not",
+  impl OutputDataType for Not {
+    fn output_datatype(&self) -> &DataType {
+      &DataType::BooleanType
+    }
+  }
+];

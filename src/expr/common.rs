@@ -15,7 +15,7 @@
 //! Common macros and functions for expressions.
 
 macro_rules! binary_expression {
-  ($struct_name:ident, $symbol:expr, $pretty_name:expr) => {
+  ($struct_name:ident, $symbol:expr, $pretty_name:expr, $($specs:item)*) => {
     pub struct $struct_name {
       left: Box<::expr::api::Expression>,
       right: Box<::expr::api::Expression>
@@ -30,6 +30,11 @@ macro_rules! binary_expression {
         Self { left: left, right: right }
       }
     }
+
+    // List of specialised trait implementations.
+    $(
+      $specs
+    )*
 
     impl ::std::fmt::Display for $struct_name {
       fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
@@ -52,10 +57,6 @@ macro_rules! binary_expression {
 
       fn resolved(&self) -> bool {
         self.left.resolved() && self.right.resolved()
-      }
-
-      fn data_type(&self) -> &::types::DataType {
-        self.left.data_type()
       }
 
       fn pretty_name(&self) -> &str {
@@ -106,7 +107,7 @@ macro_rules! binary_expression {
 }
 
 macro_rules! unary_expression {
-  ($struct_name:ident, $symbol:expr, $pretty_name:expr) => {
+  ($struct_name:ident, $symbol:expr, $pretty_name:expr, $($specs:item)*) => {
     pub struct $struct_name {
       child: Box<::expr::api::Expression>
     }
@@ -116,6 +117,11 @@ macro_rules! unary_expression {
         Self { child: child }
       }
     }
+
+    // List of specialised trait implementations.
+    $(
+      $specs
+    )*
 
     impl ::std::fmt::Display for $struct_name {
       fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
@@ -138,10 +144,6 @@ macro_rules! unary_expression {
 
       fn resolved(&self) -> bool {
         self.child.resolved()
-      }
-
-      fn data_type(&self) -> &::types::DataType {
-        self.child.data_type()
       }
 
       fn pretty_name(&self) -> &str {

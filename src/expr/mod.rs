@@ -24,11 +24,6 @@ pub mod logical;
 // Literals
 
 /// Macro to generate literals.
-/// For example:
-/// ```
-/// let literal = lit![Some(1), i32];
-/// let null_literal = lit![None, bool];
-/// ```
 #[macro_export]
 macro_rules! lit {
   ($value:expr, bool) => {{
@@ -254,5 +249,6 @@ mod tests {
 
     assert_eq!(t.pretty_name(), "not");
     assert_eq!(t.to_string(), "!(true)");
+    println!("{}", t.data_type());
   }
 }

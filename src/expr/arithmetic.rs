@@ -14,7 +14,37 @@
 
 //! Arithmetic expressions.
 
-binary_expression![Add, "+", "add"];
-binary_expression![Subtract, "-", "subtract"];
-binary_expression![Multiply, "*", "multiply"];
-binary_expression![Divide, "/", "divide"];
+use expr::api::OutputDataType;
+use types::DataType;
+
+binary_expression![Add, "+", "add",
+  impl OutputDataType for Add {
+    fn output_datatype(&self) -> &DataType {
+      self.left.data_type()
+    }
+  }
+];
+
+binary_expression![Subtract, "-", "subtract",
+  impl OutputDataType for Subtract {
+    fn output_datatype(&self) -> &DataType {
+      self.left.data_type()
+    }
+  }
+];
+
+binary_expression![Multiply, "*", "multiply",
+  impl OutputDataType for Multiply {
+    fn output_datatype(&self) -> &DataType {
+      self.left.data_type()
+    }
+  }
+];
+
+binary_expression![Divide, "/", "divide",
+  impl OutputDataType for Divide {
+    fn output_datatype(&self) -> &DataType {
+      self.left.data_type()
+    }
+  }
+];
