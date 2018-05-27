@@ -69,7 +69,7 @@ pub trait TreeNode<A: TreeNode<A>> {
   /// If no such node is found returns `None`.
   fn find<F>(&self, func: &mut F) -> Option<&A> where F: FnMut(&A) -> bool {
     if func(self.get()) {
-        return Some(self.get());
+      return Some(self.get());
     }
     let mut idx = 0;
     while let Some(child) = self.get_child(idx) {
