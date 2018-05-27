@@ -17,7 +17,7 @@
 use std::any;
 use std::fmt;
 
-use expr::api::{Expression, ExpressionTreeNode, OutputDataType};
+use expr::api::*;
 use types::DataType;
 
 #[derive(Clone, PartialEq)]
@@ -81,6 +81,12 @@ impl OutputDataType for Literal {
   }
 }
 
+impl ResolveExpression for Literal {
+  fn resolve(&self) -> bool {
+    true
+  }
+}
+
 impl Expression for Literal {
   fn foldable(&self) -> bool {
     true
@@ -92,10 +98,6 @@ impl Expression for Literal {
 
   fn nullable(&self) -> bool {
     self.is_null()
-  }
-
-  fn resolved(&self) -> bool {
-    true
   }
 
   fn pretty_name(&self) -> &str {

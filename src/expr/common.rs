@@ -15,7 +15,7 @@
 //! Common macros and functions for expressions.
 
 macro_rules! binary_expression {
-  ($struct_name:ident, $symbol:expr, $pretty_name:expr, $($specs:item)*) => {
+  ($struct_name:ident, $symbol:expr, $pretty_name:expr, $($specs:item),*) => {
     pub struct $struct_name {
       left: Box<::expr::api::Expression>,
       right: Box<::expr::api::Expression>
@@ -53,10 +53,6 @@ macro_rules! binary_expression {
 
       fn nullable(&self) -> bool {
         self.left.nullable() || self.right.nullable()
-      }
-
-      fn resolved(&self) -> bool {
-        self.left.resolved() && self.right.resolved()
       }
 
       fn pretty_name(&self) -> &str {
@@ -107,7 +103,7 @@ macro_rules! binary_expression {
 }
 
 macro_rules! unary_expression {
-  ($struct_name:ident, $symbol:expr, $pretty_name:expr, $($specs:item)*) => {
+  ($struct_name:ident, $symbol:expr, $pretty_name:expr, $($specs:item),*) => {
     pub struct $struct_name {
       child: Box<::expr::api::Expression>
     }
@@ -140,10 +136,6 @@ macro_rules! unary_expression {
 
       fn nullable(&self) -> bool {
         self.child.nullable()
-      }
-
-      fn resolved(&self) -> bool {
-        self.child.resolved()
       }
 
       fn pretty_name(&self) -> &str {

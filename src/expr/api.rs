@@ -24,7 +24,7 @@ use types::DataType;
 ///
 /// Do not provide specific implementations on `Expression` trait, use specialised traits
 /// instead.
-pub trait Expression: fmt::Display + OutputDataType {
+pub trait Expression: fmt::Display + OutputDataType + ResolveExpression {
   /// Returns `true` when an expression is a candidate for static evaluation before the
   /// query is executed.
   ///
@@ -55,7 +55,9 @@ pub trait Expression: fmt::Display + OutputDataType {
   /// Returns `true` if this expression and all its children have been resolved to a
   /// specific schema and input data types checking passed, and `false` if it still
   /// contains any unresolved placeholders or has data types mismatch.
-  fn resolved(&self) -> bool;
+  fn resolved(&self) -> bool {
+    self.resolve()
+  }
 
   /// Returns the data type of the result of evaluating this expression.
   ///
@@ -84,9 +86,18 @@ pub trait Expression: fmt::Display + OutputDataType {
   fn as_any_ref(&self) -> &any::Any;
 }
 
-/// Trait for providing the data type of the result of evaluating this expression.
+/// Specialisation for providing the data type of the result of evaluating this
+/// expression.
 pub trait OutputDataType {
   fn output_datatype(&self) -> &DataType;
+}
+
+/// Specialisation for resolving this expression including children, if necessary.
+/// By default, any expression is unresolved.
+pub trait ResolveExpression {
+  fn resolve(&self) -> bool {
+    false
+  }
 }
 
 /// Tree node for expression.

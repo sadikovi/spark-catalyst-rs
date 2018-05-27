@@ -14,13 +14,19 @@
 
 //! Arithmetic expressions.
 
-use expr::api::OutputDataType;
+use expr::api::{OutputDataType, ResolveExpression};
 use types::DataType;
 
 binary_expression![Add, "+", "add",
   impl OutputDataType for Add {
     fn output_datatype(&self) -> &DataType {
       self.left.data_type()
+    }
+  },
+  impl ResolveExpression for Add {
+    fn resolve(&self) -> bool {
+      self.left.resolved() && self.right.resolved() &&
+        self.left.data_type() == self.right.data_type()
     }
   }
 ];
@@ -30,6 +36,12 @@ binary_expression![Subtract, "-", "subtract",
     fn output_datatype(&self) -> &DataType {
       self.left.data_type()
     }
+  },
+  impl ResolveExpression for Subtract {
+    fn resolve(&self) -> bool {
+      self.left.resolved() && self.right.resolved() &&
+        self.left.data_type() == self.right.data_type()
+    }
   }
 ];
 
@@ -38,6 +50,12 @@ binary_expression![Multiply, "*", "multiply",
     fn output_datatype(&self) -> &DataType {
       self.left.data_type()
     }
+  },
+  impl ResolveExpression for Multiply {
+    fn resolve(&self) -> bool {
+      self.left.resolved() && self.right.resolved() &&
+        self.left.data_type() == self.right.data_type()
+    }
   }
 ];
 
@@ -45,6 +63,12 @@ binary_expression![Divide, "/", "divide",
   impl OutputDataType for Divide {
     fn output_datatype(&self) -> &DataType {
       self.left.data_type()
+    }
+  },
+  impl ResolveExpression for Divide {
+    fn resolve(&self) -> bool {
+      self.left.resolved() && self.right.resolved() &&
+        self.left.data_type() == self.right.data_type()
     }
   }
 ];
