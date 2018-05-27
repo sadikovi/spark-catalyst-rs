@@ -22,6 +22,7 @@ use types::DataType;
 
 #[derive(Clone, PartialEq)]
 pub enum Literal {
+  Boolean(Option<bool>),
   Byte(Option<i8>),
   Short(Option<i16>),
   Integer(Option<i32>),
@@ -34,6 +35,7 @@ pub enum Literal {
 impl Literal {
   pub fn is_null(&self) -> bool {
     match self {
+      Literal::Boolean(value) => value.is_none(),
       Literal::Byte(value) => value.is_none(),
       Literal::Short(value) => value.is_none(),
       Literal::Integer(value) => value.is_none(),
@@ -45,41 +47,13 @@ impl Literal {
   }
 }
 
-/// Trait provides a method overloading for creating literals from different values.
-pub trait LiteralConvert<T> {
-  fn lit(value: T) -> Self;
-}
-
-macro_rules! lit {
-  ($source_type:ident, $literal:ident) => {
-    impl LiteralConvert<$source_type> for Literal {
-      fn lit(value: $source_type) -> Literal {
-        Literal::$literal(Some(value))
-      }
-    }
-  };
-}
-
-lit![i8, Byte];
-lit![i16, Short];
-lit![i32, Integer];
-lit![i64, Long];
-lit![f32, Float];
-lit![f64, Double];
-lit![String, String];
-
-impl<'a> LiteralConvert<&'a str> for Literal {
-  fn lit(value: &str) -> Literal {
-    Literal::String(Some(value.to_string()))
-  }
-}
-
 impl fmt::Display for Literal {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     if self.is_null() {
       write!(f, "null")
     } else {
       match self {
+        Literal::Boolean(value) => write!(f, "{}", value.unwrap()),
         Literal::Byte(value) => write!(f, "{}", value.unwrap()),
         Literal::Short(value) => write!(f, "{}", value.unwrap()),
         Literal::Integer(value) => write!(f, "{}", value.unwrap()),
@@ -111,6 +85,7 @@ impl Expression for Literal {
 
   fn data_type(&self) -> &DataType {
     match self {
+      Literal::Boolean(_) => &DataType::BooleanType,
       Literal::Byte(_) => &DataType::ByteType,
       Literal::Short(_) => &DataType::ShortType,
       Literal::Integer(_) => &DataType::IntegerType,
@@ -152,15 +127,16 @@ mod tests {
 
   #[test]
   fn test_literal_is_null() {
-    assert_eq!(Literal::lit(1i8).is_null(), false);
-    assert_eq!(Literal::lit(1i16).is_null(), false);
-    assert_eq!(Literal::lit(1i32).is_null(), false);
-    assert_eq!(Literal::lit(1i64).is_null(), false);
-    assert_eq!(Literal::lit(1f32).is_null(), false);
-    assert_eq!(Literal::lit(1f64).is_null(), false);
-    assert_eq!(Literal::lit(String::from("abc")).is_null(), false);
-    assert_eq!(Literal::lit("abc").is_null(), false);
+    assert_eq!(Literal::Boolean(Some(true)).is_null(), false);
+    assert_eq!(Literal::Byte(Some(1)).is_null(), false);
+    assert_eq!(Literal::Short(Some(1)).is_null(), false);
+    assert_eq!(Literal::Integer(Some(1)).is_null(), false);
+    assert_eq!(Literal::Long(Some(1)).is_null(), false);
+    assert_eq!(Literal::Float(Some(1.2)).is_null(), false);
+    assert_eq!(Literal::Double(Some(1.2)).is_null(), false);
+    assert_eq!(Literal::String(Some("abc".to_string())).is_null(), false);
 
+    assert_eq!(Literal::Boolean(None).is_null(), true);
     assert_eq!(Literal::Byte(None).is_null(), true);
     assert_eq!(Literal::Short(None).is_null(), true);
     assert_eq!(Literal::Integer(None).is_null(), true);
@@ -172,15 +148,16 @@ mod tests {
 
   #[test]
   fn test_literal_display() {
-    assert_eq!(Literal::lit(1i8).to_string(), "1");
-    assert_eq!(Literal::lit(1i16).to_string(), "1");
-    assert_eq!(Literal::lit(1i32).to_string(), "1");
-    assert_eq!(Literal::lit(1i64).to_string(), "1");
-    assert_eq!(Literal::lit(1f32).to_string(), "1.0");
-    assert_eq!(Literal::lit(1f64).to_string(), "1.0");
-    assert_eq!(Literal::lit(String::from("abc")).to_string(), "\"abc\"");
-    assert_eq!(Literal::lit("abc").to_string(), "\"abc\"");
+    assert_eq!(Literal::Boolean(Some(true)).to_string(), "true");
+    assert_eq!(Literal::Byte(Some(1)).to_string(), "1");
+    assert_eq!(Literal::Short(Some(1)).to_string(), "1");
+    assert_eq!(Literal::Integer(Some(1)).to_string(), "1");
+    assert_eq!(Literal::Long(Some(1)).to_string(), "1");
+    assert_eq!(Literal::Float(Some(1.0)).to_string(), "1.0");
+    assert_eq!(Literal::Double(Some(1.0)).to_string(), "1.0");
+    assert_eq!(Literal::String(Some(String::from("abc"))).to_string(), "\"abc\"");
 
+    assert_eq!(Literal::Boolean(None).to_string(), "null");
     assert_eq!(Literal::Byte(None).to_string(), "null");
     assert_eq!(Literal::Short(None).to_string(), "null");
     assert_eq!(Literal::Integer(None).to_string(), "null");
@@ -192,6 +169,7 @@ mod tests {
 
   #[test]
   fn test_literal_datatype() {
+    assert_eq!(Literal::Boolean(None).data_type(), &DataType::BooleanType);
     assert_eq!(Literal::Byte(None).data_type(), &DataType::ByteType);
     assert_eq!(Literal::Short(None).data_type(), &DataType::ShortType);
     assert_eq!(Literal::Integer(None).data_type(), &DataType::IntegerType);
@@ -203,11 +181,14 @@ mod tests {
 
   #[test]
   fn test_literal_eq_as_expr() {
-    let a = Literal::lit(1i32);
-    assert_eq!(a.eq_as_expr(&Literal::lit(1i32).clone_as_expr()), true);
-    assert_eq!(a.eq_as_expr(&Literal::lit(2i32).clone_as_expr()), false);
-    assert_eq!(a.eq_as_expr(&Literal::lit("abc").clone_as_expr()), false);
+    let a = Literal::Integer(Some(1));
+    assert_eq!(a.eq_as_expr(&Literal::Integer(Some(1)).clone_as_expr()), true);
+    assert_eq!(a.eq_as_expr(&Literal::Integer(Some(2)).clone_as_expr()), false);
+    assert_eq!(
+      a.eq_as_expr(&Literal::String(Some("abc".to_string())).clone_as_expr()),
+      false
+    );
     assert_eq!(a.eq_as_expr(&Literal::Integer(None).clone_as_expr()), false);
-    assert_eq!(a.eq_as_expr(&Literal::lit(1i8).clone_as_expr()), false);
+    assert_eq!(a.eq_as_expr(&Literal::Byte(Some(1)).clone_as_expr()), false);
   }
 }
