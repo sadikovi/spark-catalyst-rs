@@ -20,6 +20,7 @@ use std::fmt;
 /// The collection of all data types supported by the optimizer.
 #[derive(Clone, Debug, PartialEq)]
 pub enum DataType {
+  BooleanType,
   ByteType,
   ShortType,
   IntegerType,
@@ -59,6 +60,7 @@ impl DataType {
   /// Default size in bytes of a value of this data type, used for size estimation.
   pub fn default_size(&self) -> usize {
     match self {
+      DataType::BooleanType => 1,
       DataType::ByteType => 1,
       DataType::ShortType => 2,
       DataType::IntegerType => 4,
@@ -93,6 +95,7 @@ impl DataType {
   /// arrays, structs, and maps.
   pub fn is_atomic(&self) -> bool {
     match self {
+      DataType::BooleanType |
       DataType::ByteType |
       DataType::ShortType |
       DataType::IntegerType |
@@ -134,6 +137,7 @@ impl DataType {
   /// Internal method to extract short type name.
   fn type_name(&self) -> &str {
     match self {
+      DataType::BooleanType => "bool",
       DataType::ByteType => "byte",
       DataType::ShortType => "short",
       DataType::IntegerType => "int",
@@ -230,6 +234,7 @@ mod tests {
 
   #[test]
   fn test_datatype_is_atomic() {
+    assert_eq!(DataType::BooleanType.is_atomic(), true);
     assert_eq!(DataType::ByteType.is_atomic(), true);
     assert_eq!(DataType::ShortType.is_atomic(), true);
     assert_eq!(DataType::IntegerType.is_atomic(), true);
@@ -242,6 +247,7 @@ mod tests {
 
   #[test]
   fn test_datatype_is_struct() {
+    assert_eq!(DataType::BooleanType.is_struct(), false);
     assert_eq!(DataType::ByteType.is_struct(), false);
     assert_eq!(DataType::ShortType.is_struct(), false);
     assert_eq!(DataType::IntegerType.is_struct(), false);
@@ -254,6 +260,7 @@ mod tests {
 
   #[test]
   fn test_datatype_type_name() {
+    assert_eq!(DataType::BooleanType.type_name(), "bool");
     assert_eq!(DataType::ByteType.type_name(), "byte");
     assert_eq!(DataType::ShortType.type_name(), "short");
     assert_eq!(DataType::IntegerType.type_name(), "int");
@@ -316,6 +323,7 @@ mod tests {
       .add_field("d", DataType::struct_type(vec![])
         .add_field("x", DataType::ByteType)
         .add_field("y", DataType::ShortType)
+        .add_field_n("z", DataType::BooleanType, false)
       )
       .add_field_n("e", DataType::FloatType, false)
       .add_field_n("f", DataType::LongType, false);
@@ -328,6 +336,7 @@ mod tests {
       " |- d: struct (nullable = true)",
       "    |- x: byte (nullable = true)",
       "    |- y: short (nullable = true)",
+      "    |- z: bool (nullable = false)",
       " |- e: float (nullable = false)",
       " |- f: long (nullable = false)"
     ].join("\n");
