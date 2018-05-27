@@ -249,6 +249,85 @@ mod tests {
 
     assert_eq!(t.pretty_name(), "not");
     assert_eq!(t.to_string(), "!(true)");
-    println!("{}", t.data_type());
+  }
+
+  #[test]
+  fn test_arithmetic_expression_tree_resolve() {
+    // Resolved expressions
+
+    let t = add![lit![Some(1), i32], lit![Some(2), i32]];
+    assert!(t.resolved());
+
+    let t = sub![lit![Some(1), i32], lit![Some(2), i32]];
+    assert!(t.resolved());
+
+    let t = mul![lit![Some(1), i32], lit![Some(2), i32]];
+    assert!(t.resolved());
+
+    let t = div![lit![Some(1), i32], lit![Some(2), i32]];
+    assert!(t.resolved());
+
+    // Unresolved expressions
+
+    let t = add![lit![Some(1), i32], lit![Some(true), bool]];
+    assert!(!t.resolved());
+
+    let t = sub![lit![Some(1), i32], lit![Some(true), bool]];
+    assert!(!t.resolved());
+
+    let t = mul![lit![Some(true), bool], lit![Some(2), i32]];
+    assert!(!t.resolved());
+
+    let t = div![lit![Some(true), bool], lit![Some(2), i32]];
+    assert!(!t.resolved());
+  }
+
+  #[test]
+  fn test_expression_tree_resolve() {
+    // Resolved expressions
+
+    let t = and![lit![Some(true), bool], lit![Some(true), bool]];
+    assert!(t.resolved());
+
+    let t = or![lit![Some(true), bool], lit![Some(true), bool]];
+    assert!(t.resolved());
+
+    let t = gt![lit![Some(2), i32], lit![Some(1), i32]];
+    assert!(t.resolved());
+
+    let t = lt![lit![Some(2), i32], lit![Some(1), i32]];
+    assert!(t.resolved());
+
+    let t = gteq![lit![Some(2), i32], lit![Some(1), i32]];
+    assert!(t.resolved());
+
+    let t = lteq![lit![Some(2), i32], lit![Some(1), i32]];
+    assert!(t.resolved());
+
+    let t = not![lit![Some(true), bool]];
+    assert!(t.resolved());
+
+    // Unresolved expressions
+
+    let t = and![lit![Some(1), i32], lit![Some(true), bool]];
+    assert!(!t.resolved());
+
+    let t = or![lit![Some(2), i32], lit![Some(true), bool]];
+    assert!(!t.resolved());
+
+    let t = gt![lit![Some(2), i32], lit![Some(true), bool]];
+    assert!(!t.resolved());
+
+    let t = lt![lit![Some(2.0), f32], lit![Some(1), i32]];
+    assert!(!t.resolved());
+
+    let t = gteq![lit![Some(2.0), f32], lit![Some(1), i32]];
+    assert!(!t.resolved());
+
+    let t = lteq![lit![Some(true), bool], lit![Some(1), i32]];
+    assert!(!t.resolved());
+
+    let t = not![lit![Some(1), i32]];
+    assert!(!t.resolved());
   }
 }
