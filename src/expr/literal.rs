@@ -100,8 +100,8 @@ impl Expression for Literal {
     self.is_null()
   }
 
-  fn pretty_name(&self) -> &str {
-    "literal"
+  fn pretty_name(&self) -> String {
+    "literal".to_owned()
   }
 
   fn clone_as_expr(&self) -> Box<Expression> {

@@ -20,6 +20,7 @@ pub mod common;
 pub mod literal;
 pub mod arithmetic;
 pub mod logical;
+pub mod reference;
 
 // Literals
 

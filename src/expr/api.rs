@@ -68,7 +68,7 @@ pub trait Expression: fmt::Display + OutputDataType + ResolveExpression {
   }
 
   /// Returns a user-facing string representation of this expression's name.
-  fn pretty_name(&self) -> &str;
+  fn pretty_name(&self) -> String;
 
   /// Clones this expression and returns it as `Box<Expression>`.
   /// This method should behave similar to `Clone` trait.

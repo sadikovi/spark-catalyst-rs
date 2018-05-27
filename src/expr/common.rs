@@ -55,8 +55,8 @@ macro_rules! binary_expression {
         self.left.nullable() || self.right.nullable()
       }
 
-      fn pretty_name(&self) -> &str {
-        $pretty_name
+      fn pretty_name(&self) -> String {
+        $pretty_name.to_owned()
       }
 
       fn clone_as_expr(&self) -> Box<::expr::api::Expression> {
@@ -138,8 +138,8 @@ macro_rules! unary_expression {
         self.child.nullable()
       }
 
-      fn pretty_name(&self) -> &str {
-        $pretty_name
+      fn pretty_name(&self) -> String {
+        $pretty_name.to_owned()
       }
 
       fn clone_as_expr(&self) -> Box<::expr::api::Expression> {
