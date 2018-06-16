@@ -14,61 +14,22 @@
 
 //! Arithmetic expressions.
 
-use expr::api::{OutputDataType, ResolveExpression};
-use types::DataType;
+use expr::api::{Expression, binary};
 
-binary_expression![Add, "+", "add",
-  impl OutputDataType for Add {
-    fn output_datatype(&self) -> &DataType {
-      self.left.data_type()
-    }
-  },
-  impl ResolveExpression for Add {
-    fn resolve(&self) -> bool {
-      self.left.resolved() && self.right.resolved() &&
-        self.left.data_type() == self.right.data_type()
-    }
-  }
-];
+/// Adds left and right expressions.
+pub fn add(left: Expression, right: Expression) -> Expression {
+  binary("ADD".to_owned(), "+".to_owned(), left, right)
+    .clone(Box::new(|exp| {
+      add(exp.children()[0].clone(), exp.children()[1].clone())
+    }))
+    .build()
+}
 
-binary_expression![Subtract, "-", "subtract",
-  impl OutputDataType for Subtract {
-    fn output_datatype(&self) -> &DataType {
-      self.left.data_type()
-    }
-  },
-  impl ResolveExpression for Subtract {
-    fn resolve(&self) -> bool {
-      self.left.resolved() && self.right.resolved() &&
-        self.left.data_type() == self.right.data_type()
-    }
-  }
-];
-
-binary_expression![Multiply, "*", "multiply",
-  impl OutputDataType for Multiply {
-    fn output_datatype(&self) -> &DataType {
-      self.left.data_type()
-    }
-  },
-  impl ResolveExpression for Multiply {
-    fn resolve(&self) -> bool {
-      self.left.resolved() && self.right.resolved() &&
-        self.left.data_type() == self.right.data_type()
-    }
-  }
-];
-
-binary_expression![Divide, "/", "divide",
-  impl OutputDataType for Divide {
-    fn output_datatype(&self) -> &DataType {
-      self.left.data_type()
-    }
-  },
-  impl ResolveExpression for Divide {
-    fn resolve(&self) -> bool {
-      self.left.resolved() && self.right.resolved() &&
-        self.left.data_type() == self.right.data_type()
-    }
-  }
-];
+/// Subtracts right expression from left expression.
+pub fn sub(left: Expression, right: Expression) -> Expression {
+  binary("SUB".to_owned(), "-".to_owned(), left, right)
+    .clone(Box::new(|exp| {
+      sub(exp.children()[0].clone(), exp.children()[1].clone())
+    }))
+    .build()
+}

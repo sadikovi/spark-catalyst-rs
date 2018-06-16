@@ -14,116 +14,98 @@
 
 //! Logical expressions.
 
-use expr::api::{OutputDataType, ResolveExpression};
+use expr::api::{Expression, ExpressionBuilder, binary, unary};
 use types::DataType;
 
-binary_expression![GreaterThan, ">", "greater than",
-  impl OutputDataType for GreaterThan {
-    fn output_datatype(&self) -> &DataType {
-      &DataType::BooleanType
-    }
-  },
-  impl ResolveExpression for GreaterThan {
-    fn resolve(&self) -> bool {
-      self.left.resolved() && self.right.resolved() &&
-        self.left.data_type() == self.right.data_type()
-    }
-  }
-];
+/// Returns builder for logical binary expression.
+fn logical_binary(
+  name: &str,
+  symbol: &str,
+  left: Expression,
+  right: Expression) ->
+ExpressionBuilder
+{
+  binary(name.to_owned(), symbol.to_owned(), left, right)
+    .datatype(Box::new(|_| &DataType::BooleanType))
+}
 
-binary_expression![LessThan, "<", "less than",
-  impl OutputDataType for LessThan {
-    fn output_datatype(&self) -> &DataType {
-      &DataType::BooleanType
-    }
-  },
-  impl ResolveExpression for LessThan {
-    fn resolve(&self) -> bool {
-      self.left.resolved() && self.right.resolved() &&
-        self.left.data_type() == self.right.data_type()
-    }
-  }
-];
+/// Returns builder for logical unary expression.
+fn logical_unary(name: &str, symbol: &str, child: Expression) -> ExpressionBuilder {
+  unary(name.to_owned(), symbol.to_owned(), child)
+    .datatype(Box::new(|_| &DataType::BooleanType))
+}
 
-binary_expression![GreaterThanOrEqual, ">=", "greater than or equal",
-  impl OutputDataType for GreaterThanOrEqual {
-    fn output_datatype(&self) -> &DataType {
-      &DataType::BooleanType
-    }
-  },
-  impl ResolveExpression for GreaterThanOrEqual {
-    fn resolve(&self) -> bool {
-      self.left.resolved() && self.right.resolved() &&
-        self.left.data_type() == self.right.data_type()
-    }
-  }
-];
+/// Left > right.
+pub fn gt(left: Expression, right: Expression) -> Expression {
+  logical_binary("GREATER_THAN", ">", left, right)
+    .clone(Box::new(|exp| {
+      gt(exp.children()[0].clone(), exp.children()[1].clone())
+    }))
+    .build()
+}
 
-binary_expression![LessThanOrEqual, "<=", "less than or equal",
-  impl OutputDataType for LessThanOrEqual {
-    fn output_datatype(&self) -> &DataType {
-      &DataType::BooleanType
-    }
-  },
-  impl ResolveExpression for LessThanOrEqual {
-    fn resolve(&self) -> bool {
-      self.left.resolved() && self.right.resolved() &&
-        self.left.data_type() == self.right.data_type()
-    }
-  }
-];
+/// Left >= right.
+pub fn ge(left: Expression, right: Expression) -> Expression {
+  logical_binary("GREATER_OR_EQUAL", ">=", left, right)
+    .clone(Box::new(|exp| {
+      ge(exp.children()[0].clone(), exp.children()[1].clone())
+    }))
+    .build()
+}
 
-binary_expression![Equals, "==", "equals",
-  impl OutputDataType for Equals {
-    fn output_datatype(&self) -> &DataType {
-      &DataType::BooleanType
-    }
-  },
-  impl ResolveExpression for Equals {
-    fn resolve(&self) -> bool {
-      self.left.resolved() && self.right.resolved() &&
-        self.left.data_type() == self.right.data_type()
-    }
-  }
-];
+/// Left < right.
+pub fn lt(left: Expression, right: Expression) -> Expression {
+  logical_binary("LESS_THAN", "<", left, right)
+    .clone(Box::new(|exp| {
+      lt(exp.children()[0].clone(), exp.children()[1].clone())
+    }))
+    .build()
+}
 
-binary_expression![And, "&&", "and",
-  impl OutputDataType for And {
-    fn output_datatype(&self) -> &DataType {
-      &DataType::BooleanType
-    }
-  },
-  impl ResolveExpression for And {
-    fn resolve(&self) -> bool {
-      self.left.resolved() && self.left.data_type() == &DataType::BooleanType &&
-        self.right.resolved() && self.right.data_type() == &DataType::BooleanType
-    }
-  }
-];
+/// Left <= right.
+pub fn le(left: Expression, right: Expression) -> Expression {
+  logical_binary("LESS_OR_EQUAL", "<=", left, right)
+    .clone(Box::new(|exp| {
+      le(exp.children()[0].clone(), exp.children()[1].clone())
+    }))
+    .build()
+}
 
-binary_expression![Or, "||", "or",
-  impl OutputDataType for Or {
-    fn output_datatype(&self) -> &DataType {
-      &DataType::BooleanType
-    }
-  },
-  impl ResolveExpression for Or {
-    fn resolve(&self) -> bool {
-      self.left.resolved() && self.left.data_type() == &DataType::BooleanType &&
-        self.right.resolved() && self.right.data_type() == &DataType::BooleanType
-    }
-  }
-];
+/// Left && right.
+pub fn and(left: Expression, right: Expression) -> Expression {
+  logical_binary("AND", "&&", left, right)
+    .clone(Box::new(|exp| {
+      and(exp.children()[0].clone(), exp.children()[1].clone())
+    }))
+    .build()
+}
 
-unary_expression![Not, "!", "not",
-  impl OutputDataType for Not {
-    fn output_datatype(&self) -> &DataType {
-      &DataType::BooleanType
-    }
-  },
-  impl ResolveExpression for Not {
-    fn resolve(&self) -> bool {
-      self.child.resolved() && self.child.data_type() == &DataType::BooleanType
-    }
-  }
-];
+/// Left || right.
+pub fn or(left: Expression, right: Expression) -> Expression {
+  logical_binary("OR", "||", left, right)
+    .clone(Box::new(|exp| {
+      or(exp.children()[0].clone(), exp.children()[1].clone())
+    }))
+    .build()
+}
+
+/// Negation
+pub fn not(child: Expression) -> Expression {
+  logical_unary("NOT", "!", child)
+    .clone(Box::new(|exp| {
+      not(exp.children()[0].clone())
+    }))
+    .build()
+}
+
+/// Is null
+pub fn is_null(child: Expression) -> Expression {
+  logical_unary("IS_NULL", "", child)
+    .display(Box::new(|exp| {
+      format!("({} is null)", exp.children()[0].pretty_string())
+    }))
+    .clone(Box::new(|exp| {
+      is_null(exp.children()[0].clone())
+    }))
+    .build()
+}
